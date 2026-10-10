@@ -1,0 +1,57 @@
+# Secrets and local config
+.env
+.env.local
+.env.*.local
+*.pem
+*.p12
+credentials.json
+
+# Tools downloaded for this machine only
+.tools/
+*.zip
+
+# Java / Maven
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+!backend/.mvn/wrapper/maven-wrapper.properties
+*.class
+*.jar
+*.war
+hs_err_pid*
+replay_pid*
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+yarn-error.log*
+
+# Python
+ai-service/.venv/
+ai-service/venv/
+ai-service/__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Logs and OS
+*.log
+uploads/
+
+# Test / coverage
+backend/.classpath
+backend/.project
+backend/.settings/
+coverage/
+htmlcov/
