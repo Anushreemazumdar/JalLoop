@@ -110,7 +110,7 @@ The Spring Boot backend owns authoritative application records and state transit
 JalLoop uses the Rational Method to estimate theoretical runoff volume:
 
 \[
-V = \frac{P \times A \times C}{1000}
+V = {P*A *C}/{1000}
 \]
 
 Where:
