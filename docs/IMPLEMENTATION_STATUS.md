@@ -13,7 +13,7 @@
 | :--- | :--- | :--- | :--- |
 | **Backend (Spring Boot)** | Complete & Verified | 9/9 Tests Passing (`mvn test`) | REST APIs for incidents, duplicate hints, hotspot clustering, water shortages, catchments, rainfall events, recovery assessments, project governance reviews, physical measurements, audit trail logging. Fixed `DemoAuthInterceptor` effectively-final compilation bug. |
 | **AI Service (FastAPI)** | Complete & Verified | 6/6 Tests Passing | Deterministic rational runoff calculation (\(V = P \cdot A \cdot C / 1000\)), duplicate-candidate spatial matching, shortage heuristic prioritization, AWS Strands Agents SDK grounded explanation with offline fallback. |
-| **Frontend (React + Vite)** | Complete & Verified | Production Build Passing (`vite build`) | Responsive civic UI with IBM Plex Sans design system, persona switcher (Citizen, Inspector, Admin), interactive Leaflet maps with custom pins and cluster popups, incident reporting with map coordinate picker, incident recurrence timeline, shortage intake & ranking, rainwater recovery calculator with live rational previews, 4-stage volume ledger (Estimated, Approved, Implemented, Verified). |
+| **Frontend (React + Vite)** | Redesigned & Verified | Production Build Passing (`vite build`) | Restrained civic technology design system: warm paper surfaces (`#f7f6f2`), deep slate typography (`#182026`), muted water blue (`#24587a`), and verified outcome green (`#1b6340`). Distinctive editorial typography (`IBM Plex Serif` paired with `IBM Plex Sans` and `IBM Plex Mono`). Zero generic gradients, zero glowing blur effects, zero marquee animations. Navigation across Overview, Incident Map, Reports Register, Water Shortages, Recovery Planning, and Projects & Verification Ledger. |
 | **Documentation** | Complete | Verified | `docs/aws-eligibility.md` and `docs/IMPLEMENTATION_STATUS.md` with exact PowerShell launch commands. |
 
 ---
@@ -93,7 +93,7 @@ Open your browser at: **`http://localhost:5173`** (or `http://127.0.0.1:5173`).
    - `test_hotspot_and_shortage`: Heuristic scores and shortage ranking.
    - `test_recovery_does_not_auto_approve_road_runoff`: Contaminated road runoff blocked from auto-approval.
    - `test_explain_fallback_without_keys`: Deterministic heuristic active without cloud credentials.
-3. **Frontend Build:**
+3. **Frontend Production Build:**
    Executed `npm run build` with Vite 7.3.7:
-   - All 96 modules transformed cleanly with zero errors.
-   - Bundle size: JS 497 kB (146 kB gzip), CSS 26.8 kB (9.2 kB gzip).
+   - All 98 modules transformed cleanly with zero errors.
+   - Strict CSS and JSX compilation without external UI framework dependencies.

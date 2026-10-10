@@ -2,6 +2,13 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../services/api.js";
 import { useActor } from "../hooks/useActor.jsx";
+import {
+  IconCheckCircle,
+  IconAlertTriangle,
+  IconPlus,
+  IconArrowRight,
+  IconRefresh,
+} from "../components/Icons.jsx";
 
 export default function RecoveryReviewPage() {
   const { actor, isAdmin, isStaff } = useActor();
@@ -12,7 +19,7 @@ export default function RecoveryReviewPage() {
   const [error, setError] = useState(null);
   const [notification, setNotification] = useState(null);
 
-  // Selected project for modal action
+  // Modal states
   const [selectedProject, setSelectedProject] = useState(null);
   const [modalMode, setModalMode] = useState(null); // "review" | "measure"
 
@@ -27,15 +34,15 @@ export default function RecoveryReviewPage() {
   // Measure form
   const [measureForm, setMeasureForm] = useState({
     measuredVolumeM3: "5.0",
-    method: "Flow meter reading at storage tank outlet",
+    method: "Calibrated flow meter reading at storage tank outlet",
     measuredAt: new Date().toISOString().slice(0, 16),
   });
 
   useEffect(() => {
-    loadData();
+    loadLedgerData();
   }, []);
 
-  async function loadData() {
+  async function loadLedgerData() {
     try {
       setLoading(true);
       setError(null);
@@ -46,7 +53,7 @@ export default function RecoveryReviewPage() {
       setOverview(overviewData);
       setProjects(projectList || []);
     } catch (err) {
-      setError(err.message || "Failed to load recovery review data");
+      setError(err.message || "Failed to load project ledger");
     } finally {
       setLoading(false);
     }
@@ -72,9 +79,9 @@ export default function RecoveryReviewPage() {
     e.preventDefault();
     try {
       await api.reviewProject(selectedProject.id, reviewForm);
-      setNotification(`Project "${selectedProject.title}" review updated successfully.`);
+      setNotification(`Project review decision committed for "${selectedProject.title}".`);
       setModalMode(null);
-      loadData();
+      loadLedgerData();
     } catch (err) {
       setError(err.message);
     }
@@ -91,150 +98,164 @@ export default function RecoveryReviewPage() {
       await api.measureProject(selectedProject.id, payload);
       setNotification(`Physical measurement recorded for "${selectedProject.title}".`);
       setModalMode(null);
-      loadData();
+      loadLedgerData();
     } catch (err) {
       setError(err.message);
     }
   }
 
-  // Calculate volume totals across lifecycle stages
   const estimatedVol = overview?.estimatedPotentiallyRecoverableM3 ?? 0;
   const verifiedVol = overview?.verifiedRecoveredM3 ?? 0;
 
   return (
     <div>
-      <div className="page-header">
+      <div className="editorial-header">
         <div>
-          <h2>Recovery Governance & Physical Verification Ledger</h2>
-          <p>
-            Enforce human oversight, safety classifications, and physical meter verifications before claiming civic water recovery.
+          <h1 className="editorial-title">Projects & verification ledger</h1>
+          <p className="editorial-subtext">
+            Municipal governance and physical verification ledger for sanctioned rainwater recovery projects.
           </p>
         </div>
-        <div className="header-actions">
+        <div className="header-action-row">
           <Link to="/recovery" className="btn btn-secondary">
-            &larr; Recovery Calculator
+            &larr; Recovery planning calculator
           </Link>
+          <button className="btn btn-secondary" onClick={loadLedgerData} title="Refresh">
+            <IconRefresh size={13} />
+          </button>
         </div>
       </div>
 
       {notification && (
-        <div className="alert alert-success" style={{ display: "flex", justifyContent: "space-between" }}>
+        <div className="civic-callout success">
+          <IconCheckCircle size={16} style={{ flexShrink: 0, marginTop: "2px" }} />
           <span>{notification}</span>
-          <button className="btn btn-sm btn-secondary" onClick={() => setNotification(null)}>Dismiss</button>
         </div>
       )}
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      {error && (
+        <div className="civic-callout danger">
+          <strong>Error:</strong> {error}
+        </div>
+      )}
 
-      {/* 4-Stage Lifecycle Volume Stat Cards */}
-      <div className="stats-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
-        <div className="stat-card primary">
-          <div className="stat-card-title">1. Estimated Runoff</div>
-          <div className="stat-card-value">{estimatedVol} m³</div>
-          <div className="stat-card-subtext">Rational method \(V = P \cdot A \cdot C / 1000\)</div>
+      {/* 4-Stage Volume Lifecycle Balance Sheet */}
+      <div className="ledger-banner">
+        <div className="ledger-cell estimated">
+          <span className="ledger-cell-title">1. Estimated runoff</span>
+          <div className="ledger-cell-value">
+            {estimatedVol}<span className="ledger-cell-unit">m³</span>
+          </div>
+          <span className="ledger-cell-desc">Hydrological model ceiling</span>
         </div>
 
-        <div className="stat-card purple">
-          <div className="stat-card-title">2. Approved Projects</div>
-          <div className="stat-card-value">
+        <div className="ledger-cell">
+          <span className="ledger-cell-title">2. Approved projects</span>
+          <div className="ledger-cell-value">
             {projects.filter((p) => p.reviewStatus === "APPROVED").length}
           </div>
-          <div className="stat-card-subtext">Human sanctioned for implementation</div>
+          <span className="ledger-cell-desc">Sanctioned by human review</span>
         </div>
 
-        <div className="stat-card amber">
-          <div className="stat-card-title">3. Active Installations</div>
-          <div className="stat-card-value">
+        <div className="ledger-cell">
+          <span className="ledger-cell-title">3. Active installations</span>
+          <div className="ledger-cell-value">
             {projects.filter((p) => p.implementationStatus === "COMPLETED" || p.implementationStatus === "UNDER_CONSTRUCTION").length}
           </div>
-          <div className="stat-card-subtext">Constructed / operational tanks</div>
+          <span className="ledger-cell-desc">Constructed or operational</span>
         </div>
 
-        <div className="stat-card emerald">
-          <div className="stat-card-title">4. Verified Water Recovered</div>
-          <div className="stat-card-value">{verifiedVol} m³</div>
-          <div className="stat-card-subtext">Metered on site (never modelled)</div>
+        <div className="ledger-cell verified">
+          <span className="ledger-cell-title">4. Verified water recovered</span>
+          <div className="ledger-cell-value">
+            {verifiedVol}<span className="ledger-cell-unit">m³</span>
+          </div>
+          <span className="ledger-cell-desc">Metered on site (non-potable)</span>
         </div>
       </div>
 
-      {/* Transparency Banner */}
-      <div className="alert alert-info">
-        <strong>The JalLoop Verification Commitment:</strong> We never treat estimated or modelled rainwater as recovered water. Water is only marked "Verified" when field inspectors log calibrated meter readings or tank gauge dip measurements.
+      <div className="civic-callout info">
+        <div>
+          <strong>The JalLoop Verification Commitment:</strong> We never treat estimated or modelled runoff as recovered water. Water is only certified in Stage 4 when field engineers log physical flow-meter readings or calibrated tank dip measurements.
+        </div>
       </div>
 
-      {/* Projects Ledger */}
-      <div className="card">
-        <div className="card-header">
+      {/* Projects Ledger Table */}
+      <div className="panel">
+        <div className="panel-header">
           <div>
-            <h3>Recovery Projects Ledger ({projects.length})</h3>
-            <p>Sanctioned civic rainwater harvesting initiatives</p>
+            <h2 className="panel-title">Sanctioned projects ledger ({projects.length})</h2>
+            <span className="panel-sub">Civil works review decisions and physical measurements</span>
           </div>
         </div>
 
         {loading ? (
-          <div className="loading-box">
-            <div className="spinner"></div>
-            <p>Loading project ledger...</p>
+          <div className="state-box">
+            <div className="spinner-crisp"></div>
+            <div className="state-box-title">Loading project ledger</div>
           </div>
         ) : projects.length === 0 ? (
-          <div className="empty-state">
-            <h4>No Recovery Projects Yet</h4>
-            <p>Generate an assessment in the Recovery Calculator tab, then promote it to candidate project.</p>
+          <div className="state-box">
+            <div className="state-box-title">No recovery projects registered</div>
+            <p style={{ fontSize: "0.82rem" }}>
+              Run a rational assessment in the <Link to="/recovery">Recovery Planning</Link> tab, then promote it to candidate project.
+            </p>
           </div>
         ) : (
-          <div className="table-container">
-            <table className="data-table">
+          <div className="table-wrap">
+            <table className="civic-table">
               <thead>
                 <tr>
-                  <th>Project Title</th>
-                  <th>Review Status</th>
+                  <th>Project title & ID</th>
+                  <th>Governance review</th>
                   <th>Implementation</th>
-                  <th>Constraints & Safety</th>
-                  <th>Verified Measurements</th>
-                  <th>Actions</th>
+                  <th>Constraints & safety directives</th>
+                  <th>Physical measurements</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {projects.map((p) => (
                   <tr key={p.id}>
                     <td>
-                      <div style={{ fontWeight: 600 }}>{p.title}</div>
-                      <div style={{ fontSize: "0.75rem", color: "var(--gray-500)", fontFamily: "var(--font-mono)" }}>
+                      <div style={{ fontWeight: 600, color: "var(--ink-primary)" }}>{p.title}</div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.74rem", color: "var(--ink-muted)", marginTop: "0.15rem" }}>
                         Assessment: {p.assessmentId?.slice(0, 8)}...
                       </div>
                       {p.syntheticDemo && (
-                        <span className="badge badge-synthetic" style={{ marginTop: "0.25rem" }}>
+                        <span className="tag-notice" style={{ marginTop: "0.25rem", display: "inline-block" }}>
                           SYNTHETIC DEMO
                         </span>
                       )}
                     </td>
                     <td>
                       <span
-                        className="badge"
+                        className="status-pill"
                         style={{
                           backgroundColor:
                             p.reviewStatus === "APPROVED"
-                              ? "var(--emerald-light)"
+                              ? "var(--verified-tint)"
                               : p.reviewStatus === "REJECTED"
-                              ? "var(--rose-light)"
-                              : "var(--amber-light)",
+                              ? "var(--urgent-tint)"
+                              : "var(--warning-tint)",
                           color:
                             p.reviewStatus === "APPROVED"
-                              ? "var(--emerald)"
+                              ? "var(--verified-ink)"
                               : p.reviewStatus === "REJECTED"
-                              ? "var(--rose)"
-                              : "var(--amber)",
+                              ? "var(--urgent-red)"
+                              : "var(--warning-amber)",
+                          border: "1px solid currentColor",
                         }}
                       >
                         {p.reviewStatus}
                       </span>
                     </td>
                     <td>
-                      <span className="badge badge-in-progress">
+                      <span className="status-pill in-progress">
                         {p.implementationStatus}
                       </span>
                     </td>
-                    <td style={{ maxWidth: "220px", fontSize: "0.8rem", color: "var(--gray-600)" }}>
+                    <td style={{ maxWidth: "240px", fontSize: "0.8rem", color: "var(--ink-secondary)" }}>
                       {p.constraints || p.reviewReason || "None recorded"}
                     </td>
                     <td>
@@ -242,34 +263,34 @@ export default function RecoveryReviewPage() {
                         <div>
                           {p.measurements.map((m) => (
                             <div key={m.id} style={{ fontSize: "0.8rem" }}>
-                              <strong style={{ color: "var(--emerald)" }}>{m.measuredVolumeM3} m³</strong>
-                              <span style={{ color: "var(--gray-500)", fontSize: "0.75rem", marginLeft: "0.3rem" }}>
+                              <strong style={{ color: "var(--verified-ink)", fontFamily: "var(--font-mono)" }}>
+                                {m.measuredVolumeM3} m³
+                              </strong>
+                              <span style={{ color: "var(--ink-muted)", fontSize: "0.72rem", marginLeft: "0.3rem" }}>
                                 ({m.method})
                               </span>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <span style={{ fontSize: "0.75rem", color: "var(--gray-400)" }}>None recorded</span>
+                        <span style={{ fontSize: "0.76rem", color: "var(--ink-muted)" }}>None logged</span>
                       )}
                     </td>
                     <td>
-                      <div style={{ display: "flex", gap: "0.4rem" }}>
+                      <div style={{ display: "flex", gap: "0.35rem" }}>
                         {isStaff && (
                           <button
                             className="btn btn-secondary btn-sm"
                             onClick={() => openReviewModal(p)}
-                            title="Update review decision"
                           >
                             Review
                           </button>
                         )}
                         <button
-                          className="btn btn-teal btn-sm"
+                          className="btn btn-verified btn-sm"
                           onClick={() => openMeasureModal(p)}
-                          title="Log physical meter measurement"
                         >
-                          + Log Meter
+                          + Log meter
                         </button>
                       </div>
                     </td>
@@ -281,80 +302,81 @@ export default function RecoveryReviewPage() {
         )}
       </div>
 
-      {/* MODAL 1: REVIEW PROJECT */}
+      {/* Modal 1: Governance Review */}
       {modalMode === "review" && selectedProject && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 2000, padding: "1rem"
-        }}>
-          <div className="card" style={{ maxWidth: "550px", width: "100%", margin: 0, maxHeight: "90vh", overflowY: "auto" }}>
-            <div className="card-header">
-              <h3>Human Governance Review</h3>
-              <button className="btn btn-sm btn-secondary" onClick={() => setModalMode(null)}>&times;</button>
+        <div className="modal-overlay">
+          <div className="modal-dialog">
+            <div className="modal-header">
+              <h2 className="panel-title">Human governance review</h2>
+              <button className="btn btn-secondary btn-sm" onClick={() => setModalMode(null)}>&times;</button>
             </div>
-            <p style={{ fontSize: "0.85rem", color: "var(--gray-600)", marginBottom: "1rem" }}>
-              Project: <strong>{selectedProject.title}</strong>
-            </p>
 
             <form onSubmit={handleReviewSubmit}>
-              <div className="form-group">
-                <label>Sanction / Review Decision *</label>
-                <select
-                  value={reviewForm.reviewStatus}
-                  onChange={(e) => setReviewForm((p) => ({ ...p, reviewStatus: e.target.value }))}
-                  className="form-control"
-                >
-                  <option value="APPROVED">APPROVED (Sanctioned for recovery)</option>
-                  <option value="NEEDS_FURTHER_ASSESSMENT">NEEDS FURTHER ASSESSMENT (Lab test / site check needed)</option>
-                  <option value="REJECTED">REJECTED (Contaminated / unsafe)</option>
-                  <option value="PENDING">PENDING</option>
-                </select>
+              <div className="modal-body">
+                <div style={{ fontSize: "0.82rem", color: "var(--ink-secondary)", marginBottom: "1rem" }}>
+                  Project: <strong>{selectedProject.title}</strong>
+                </div>
+
+                <div className="form-section">
+                  <div>
+                    <label className="field-label">Sanction review decision *</label>
+                    <select
+                      value={reviewForm.reviewStatus}
+                      onChange={(e) => setReviewForm((p) => ({ ...p, reviewStatus: e.target.value }))}
+                      className="select-input"
+                    >
+                      <option value="APPROVED">APPROVED (Sanctioned for recovery)</option>
+                      <option value="NEEDS_FURTHER_ASSESSMENT">NEEDS FURTHER ASSESSMENT (Lab testing required)</option>
+                      <option value="REJECTED">REJECTED (Contaminated / unsafe)</option>
+                      <option value="PENDING">PENDING</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="field-label">Implementation phase *</label>
+                    <select
+                      value={reviewForm.implementationStatus}
+                      onChange={(e) => setReviewForm((p) => ({ ...p, implementationStatus: e.target.value }))}
+                      className="select-input"
+                    >
+                      <option value="PROPOSED">PROPOSED</option>
+                      <option value="UNDER_CONSTRUCTION">UNDER CONSTRUCTION</option>
+                      <option value="COMPLETED">COMPLETED (Operational)</option>
+                      <option value="SUSPENDED">SUSPENDED</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="field-label">Review justification *</label>
+                    <textarea
+                      rows={2}
+                      placeholder="e.g. Roof catchment inspected clean, filtration mesh verified..."
+                      value={reviewForm.reviewReason}
+                      onChange={(e) => setReviewForm((p) => ({ ...p, reviewReason: e.target.value }))}
+                      className="textarea-input"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="field-label">Constraints & safety directives</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Non-potable only; first-flush diverter required"
+                      value={reviewForm.constraints}
+                      onChange={(e) => setReviewForm((p) => ({ ...p, constraints: e.target.value }))}
+                      className="text-input"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="form-group">
-                <label>Implementation Phase *</label>
-                <select
-                  value={reviewForm.implementationStatus}
-                  onChange={(e) => setReviewForm((p) => ({ ...p, implementationStatus: e.target.value }))}
-                  className="form-control"
-                >
-                  <option value="PROPOSED">PROPOSED</option>
-                  <option value="UNDER_CONSTRUCTION">UNDER CONSTRUCTION</option>
-                  <option value="COMPLETED">COMPLETED (Operational)</option>
-                  <option value="SUSPENDED">SUSPENDED</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Review Reason / Justification *</label>
-                <textarea
-                  rows={2}
-                  placeholder="e.g. Roof catchment inspected clean, filtration mesh verified..."
-                  value={reviewForm.reviewReason}
-                  onChange={(e) => setReviewForm((p) => ({ ...p, reviewReason: e.target.value }))}
-                  className="form-control"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Engineering Constraints & Water Quality Directives</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Non-potable only; first-flush diverter required"
-                  value={reviewForm.constraints}
-                  onChange={(e) => setReviewForm((p) => ({ ...p, constraints: e.target.value }))}
-                  className="form-control"
-                />
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", marginTop: "1.25rem" }}>
+              <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setModalMode(null)}>
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  Save Review Decision
+                  Save review decision
                 </button>
               </div>
             </form>
@@ -362,66 +384,67 @@ export default function RecoveryReviewPage() {
         </div>
       )}
 
-      {/* MODAL 2: LOG PHYSICAL MEASUREMENT */}
+      {/* Modal 2: Physical Measurement */}
       {modalMode === "measure" && selectedProject && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 2000, padding: "1rem"
-        }}>
-          <div className="card" style={{ maxWidth: "550px", width: "100%", margin: 0, maxHeight: "90vh", overflowY: "auto" }}>
-            <div className="card-header">
-              <h3>Log Physical Recovery Verification</h3>
-              <button className="btn btn-sm btn-secondary" onClick={() => setModalMode(null)}>&times;</button>
+        <div className="modal-overlay">
+          <div className="modal-dialog">
+            <div className="modal-header">
+              <h2 className="panel-title">Log physical meter measurement</h2>
+              <button className="btn btn-secondary btn-sm" onClick={() => setModalMode(null)}>&times;</button>
             </div>
-            <p style={{ fontSize: "0.85rem", color: "var(--gray-600)", marginBottom: "1rem" }}>
-              Project: <strong>{selectedProject.title}</strong>
-            </p>
 
             <form onSubmit={handleMeasureSubmit}>
-              <div className="form-group">
-                <label>Physically Measured Volume (m³) *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={measureForm.measuredVolumeM3}
-                  onChange={(e) => setMeasureForm((p) => ({ ...p, measuredVolumeM3: e.target.value }))}
-                  className="form-control"
-                  required
-                />
-                <span className="form-help">Actual water measured in storage tank</span>
+              <div className="modal-body">
+                <div style={{ fontSize: "0.82rem", color: "var(--ink-secondary)", marginBottom: "1rem" }}>
+                  Project: <strong>{selectedProject.title}</strong>
+                </div>
+
+                <div className="form-section">
+                  <div>
+                    <label className="field-label">Physically measured volume (m³) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      value={measureForm.measuredVolumeM3}
+                      onChange={(e) => setMeasureForm((p) => ({ ...p, measuredVolumeM3: e.target.value }))}
+                      className="text-input"
+                      required
+                    />
+                    <span className="field-hint">Actual liquid volume measured in physical storage tank</span>
+                  </div>
+
+                  <div>
+                    <label className="field-label">Instrumentation / measurement method *</label>
+                    <input
+                      type="text"
+                      value={measureForm.method}
+                      onChange={(e) => setMeasureForm((p) => ({ ...p, method: e.target.value }))}
+                      placeholder="e.g. Calibrated flow meter reading, mechanical pulse meter"
+                      className="text-input"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="field-label">Measurement timestamp *</label>
+                    <input
+                      type="datetime-local"
+                      value={measureForm.measuredAt}
+                      onChange={(e) => setMeasureForm((p) => ({ ...p, measuredAt: e.target.value }))}
+                      className="text-input"
+                      required
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="form-group">
-                <label>Measurement Instrumentation / Method *</label>
-                <input
-                  type="text"
-                  value={measureForm.method}
-                  onChange={(e) => setMeasureForm((p) => ({ ...p, method: e.target.value }))}
-                  placeholder="e.g. Ultrasonic tank level sensor, manual dipstick rod, mechanical water meter"
-                  className="form-control"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Timestamp of Field Measurement *</label>
-                <input
-                  type="datetime-local"
-                  value={measureForm.measuredAt}
-                  onChange={(e) => setMeasureForm((p) => ({ ...p, measuredAt: e.target.value }))}
-                  className="form-control"
-                  required
-                />
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", marginTop: "1.25rem" }}>
+              <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setModalMode(null)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-emerald">
-                  Commit Verified Volume
+                <button type="submit" className="btn btn-verified">
+                  Commit verified measurement
                 </button>
               </div>
             </form>

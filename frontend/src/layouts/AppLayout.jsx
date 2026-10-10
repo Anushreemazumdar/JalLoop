@@ -1,98 +1,122 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useActor } from "../hooks/useActor.jsx";
+import {
+  IconDroplet,
+  IconMapPin,
+  IconFileText,
+  IconAlertTriangle,
+  IconLayers,
+  IconCheckCircle,
+  IconUser,
+} from "../components/Icons.jsx";
 
 export default function AppLayout() {
-  const { actor, actors, setActor, isAdmin, isStaff } = useActor();
+  const { actor, actors, setActor } = useActor();
 
   return (
-    <div className="app-container">
-      {/* Top Navigation */}
-      <header className="navbar">
-        <div className="navbar-inner">
-          <NavLink to="/" className="brand">
-            <div className="brand-logo">JL</div>
-            <div className="brand-text">
-              <h1>JalLoop</h1>
-              <span>Bharat Builds &bull; Civic Water Resilience</span>
-            </div>
+    <div className="app-shell">
+      {/* Primary Top Header */}
+      <header className="site-header">
+        <div className="site-header-inner">
+          <NavLink to="/" className="brand-unit">
+            <span className="brand-wordmark">
+              JalLoop<span className="brand-dot"></span>
+            </span>
+            <span className="brand-subline">Water Resilience Ledger</span>
           </NavLink>
 
           <nav>
-            <ul className="nav-links">
+            <ul className="primary-nav">
               <li>
-                <NavLink to="/" end className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
-                  Overview
+                <NavLink to="/" end className={({ isActive }) => `nav-item-link ${isActive ? "active" : ""}`}>
+                  <IconDroplet size={14} />
+                  <span>Overview</span>
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/map" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
-                  Incidents Map
+                <NavLink to="/map" className={({ isActive }) => `nav-item-link ${isActive ? "active" : ""}`}>
+                  <IconMapPin size={14} />
+                  <span>Incident map</span>
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/report" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
-                  Report Incident
+                <NavLink to="/reports" className={({ isActive }) => `nav-item-link ${isActive ? "active" : ""}`}>
+                  <IconFileText size={14} />
+                  <span>Reports</span>
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/shortages" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
-                  Water Shortages
+                <NavLink to="/shortages" className={({ isActive }) => `nav-item-link ${isActive ? "active" : ""}`}>
+                  <IconAlertTriangle size={14} />
+                  <span>Water shortages</span>
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/recovery" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
-                  Recovery Calculator
+                <NavLink to="/recovery" className={({ isActive }) => `nav-item-link ${isActive ? "active" : ""}`}>
+                  <IconLayers size={14} />
+                  <span>Recovery planning</span>
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/recovery/review" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
-                  Project Review
+                <NavLink to="/recovery/review" className={({ isActive }) => `nav-item-link ${isActive ? "active" : ""}`}>
+                  <IconCheckCircle size={14} />
+                  <span>Projects & verification</span>
                 </NavLink>
               </li>
             </ul>
           </nav>
 
-          <div className="actor-switcher">
-            <span className="actor-label">Active Role:</span>
-            <select
-              className="actor-select"
-              value={actor.key}
-              onChange={(e) => setActor(e.target.value)}
-              title="Switch demo persona to test Citizen, Inspector, and Admin capabilities"
-            >
-              {actors.map((a) => (
-                <option key={a.key} value={a.key}>
-                  {a.label} ({a.role})
-                </option>
-              ))}
-            </select>
+          <div className="header-actions-group">
+            <div className="persona-selector">
+              <IconUser size={13} style={{ color: "var(--ink-muted)" }} />
+              <span className="persona-label">Role:</span>
+              <select
+                className="persona-select"
+                value={actor.key}
+                onChange={(e) => setActor(e.target.value)}
+                title="Switch active municipal persona to evaluate role permissions"
+              >
+                {actors.map((a) => (
+                  <option key={a.key} value={a.key}>
+                    {a.label} ({a.role})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Synthetic Demonstration Data Banner */}
-      <aside className="demo-banner">
-        <div className="demo-banner-content">
-          <span className="demo-tag">SYNTHETIC DEMO MODE</span>
-          <span>
-            Demonstration incidents, rainfall values, and recovery records are synthetic and explicitly labelled. No actual civic field observations or lab quality tests are fabricated.
-          </span>
+      {/* Understated Static Integrity Notice (No Marquee, No Scrolling Text) */}
+      <div className="system-notice-strip">
+        <div className="system-notice-inner">
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <span className="tag-notice">INTEGRITY NOTICE</span>
+            <span>
+              Synthetic demonstration records are explicitly tagged. Theoretical runoff calculations are never counted as verified civic water recovery without on-site measurement.
+            </span>
+          </div>
+          <div style={{ fontSize: "0.72rem", color: "var(--ink-muted)", whiteSpace: "nowrap" }}>
+            Rational Equation: \(V = P \cdot A \cdot C / 1000\)
+          </div>
         </div>
-      </aside>
+      </div>
 
-      {/* Main Outlet */}
-      <main className="main-content">
+      {/* Main Page Canvas */}
+      <main className="page-canvas">
         <Outlet />
       </main>
 
-      {/* Footer */}
-      <footer className="footer">
-        <p>
-          <strong>JalLoop</strong> — Built for WeMakeDevs Bharat Builds Hackathon &bull; React + Vite + Leaflet &bull; Spring Boot 3.x &bull; MySQL &bull; FastAPI + AWS Strands Agents SDK
-        </p>
-        <p style={{ marginTop: "0.25rem", color: "var(--gray-400)" }}>
-          Data integrity rule: Theoretical runoff \(V = P \times A \times C / 1000\) is never treated as verified water recovery. Road runoff is never automatically approved for reuse.
-        </p>
+      {/* Restrained Civic Footer */}
+      <footer className="site-footer">
+        <div className="site-footer-inner">
+          <div>
+            <strong>JalLoop</strong> &mdash; Civic infrastructure resilience platform for waterlogging mitigation, drainage recurrence tracking, and verified rainwater recovery.
+          </div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem" }}>
+            Active Persona: {actor.label} ({actor.role}) &bull; Verification Standard: Rational Method + Physical Gauging
+          </div>
+        </div>
       </footer>
     </div>
   );

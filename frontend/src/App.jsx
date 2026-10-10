@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout.jsx";
 import OverviewPage from "./pages/OverviewPage.jsx";
+import ReportsPage from "./pages/ReportsPage.jsx";
 import ReportIncidentPage from "./pages/ReportIncidentPage.jsx";
 import MapPage from "./pages/MapPage.jsx";
 import IncidentDetailPage from "./pages/IncidentDetailPage.jsx";
@@ -13,8 +14,9 @@ export default function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<OverviewPage />} />
-        <Route path="/report" element={<ReportIncidentPage />} />
         <Route path="/map" element={<MapPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/report" element={<ReportIncidentPage />} />
         <Route path="/incidents/:id" element={<IncidentDetailPage />} />
         <Route path="/shortages" element={<ShortagesPage />} />
         <Route path="/recovery" element={<RecoveryPlannerPage />} />

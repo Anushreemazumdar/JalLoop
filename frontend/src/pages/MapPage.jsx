@@ -3,6 +3,13 @@ import { Link } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { api } from "../services/api.js";
 import { createCategoryIcon, createHotspotIcon } from "../utils/leafletIcons.js";
+import {
+  IconPlus,
+  IconFilter,
+  IconArrowRight,
+  IconMapPin,
+  IconRefresh,
+} from "../components/Icons.jsx";
 
 export default function MapPage() {
   const [incidents, setIncidents] = useState([]);
@@ -16,14 +23,16 @@ export default function MapPage() {
   const [severity, setSeverity] = useState("");
   const [showHotspots, setShowHotspots] = useState(true);
 
-  // Center map around Pune default
-  const defaultCenter = [18.5204, 73.8567];
+  // Selected incident for the side working inspector
+  const [selectedIncident, setSelectedIncident] = useState(null);
+
+  const defaultCenter = [18.5204, 73.8567]; // Pune urban center
 
   useEffect(() => {
-    loadData();
+    loadMapData();
   }, [category, status, severity]);
 
-  async function loadData() {
+  async function loadMapData() {
     try {
       setLoading(true);
       setError(null);
@@ -38,10 +47,15 @@ export default function MapPage() {
         api.hotspots(),
       ]);
 
-      setIncidents(incidentsData.items || []);
+      const items = incidentsData.items || [];
+      setIncidents(items);
       setHotspots(hotspotsData || []);
+
+      if (items.length > 0 && !selectedIncident) {
+        setSelectedIncident(items[0]);
+      }
     } catch (err) {
-      setError(err.message || "Failed to load map data");
+      setError(err.message || "Failed to load spatial map records");
     } finally {
       setLoading(false);
     }
@@ -49,80 +63,103 @@ export default function MapPage() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="editorial-header">
         <div>
-          <h2>Interactive Civic Incident Map</h2>
-          <p>
-            Explore real-time waterlogging, pipe leaks, and recurring failure hotspots across municipal wards.
+          <h1 className="editorial-title">Spatial incident map</h1>
+          <p className="editorial-subtext">
+            Operational mapping of waterlogging, infrastructure leaks, blocked channels, and recurring spatial clusters.
           </p>
         </div>
-        <div className="header-actions">
+        <div className="header-action-row">
           <Link to="/report" className="btn btn-primary">
-            + Report New Incident
+            <IconPlus size={14} /> Report incident
           </Link>
+          <button className="btn btn-secondary" onClick={loadMapData} title="Refresh records">
+            <IconRefresh size={13} />
+          </button>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="filter-bar">
-        <div className="filter-item">
+      {/* Filter Tray */}
+      <div className="map-filter-tray">
+        <div className="map-filter-group">
+          <IconFilter size={13} style={{ color: "var(--ink-muted)" }} />
           <label>Category:</label>
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className="form-control" style={{ width: "auto" }}>
-            <option value="">All Categories</option>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="select-input"
+            style={{ width: "auto", padding: "0.25rem 0.5rem", fontSize: "0.8rem" }}
+          >
+            <option value="">All categories</option>
             <option value="WATERLOGGING">Waterlogging</option>
-            <option value="PIPE_LEAK">Pipe Leak</option>
-            <option value="BLOCKED_DRAIN">Blocked Drain</option>
-            <option value="WATER_SHORTAGE">Water Shortage</option>
+            <option value="PIPE_LEAK">Pipe leak</option>
+            <option value="BLOCKED_DRAIN">Blocked drain</option>
+            <option value="WATER_SHORTAGE">Water shortage</option>
           </select>
         </div>
 
-        <div className="filter-item">
+        <div className="map-filter-group">
           <label>Status:</label>
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className="form-control" style={{ width: "auto" }}>
-            <option value="">All Statuses</option>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="select-input"
+            style={{ width: "auto", padding: "0.25rem 0.5rem", fontSize: "0.8rem" }}
+          >
+            <option value="">All statuses</option>
             <option value="REPORTED">Reported</option>
-            <option value="UNDER_REVIEW">Under Review</option>
+            <option value="UNDER_REVIEW">Under review</option>
             <option value="ASSIGNED">Assigned</option>
-            <option value="IN_PROGRESS">In Progress</option>
+            <option value="IN_PROGRESS">In progress</option>
             <option value="RESOLVED">Resolved</option>
             <option value="VERIFIED">Verified</option>
-            <option value="REJECTED">Rejected</option>
           </select>
         </div>
 
-        <div className="filter-item">
-          <label>Severity:</label>
-          <select value={severity} onChange={(e) => setSeverity(e.target.value)} className="form-control" style={{ width: "auto" }}>
-            <option value="">All Severities</option>
-            <option value="LOW">Low</option>
-            <option value="MODERATE">Moderate</option>
-            <option value="HIGH">High</option>
+        <div className="map-filter-group">
+          <label>Priority:</label>
+          <select
+            value={severity}
+            onChange={(e) => setSeverity(e.target.value)}
+            className="select-input"
+            style={{ width: "auto", padding: "0.25rem 0.5rem", fontSize: "0.8rem" }}
+          >
+            <option value="">All priorities</option>
             <option value="CRITICAL">Critical</option>
+            <option value="HIGH">High</option>
+            <option value="MODERATE">Moderate</option>
+            <option value="LOW">Low</option>
           </select>
         </div>
 
-        <div className="filter-item" style={{ marginLeft: "auto" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}>
+        <div className="map-filter-group" style={{ marginLeft: "auto" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", color: "var(--ink-primary)" }}>
             <input
               type="checkbox"
               checked={showHotspots}
               onChange={(e) => setShowHotspots(e.target.checked)}
             />
-            Show Hotspot Clusters
+            Show recurrence clusters ({hotspots.length})
           </label>
         </div>
       </div>
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      {error && (
+        <div className="civic-callout danger">
+          <strong>Map error:</strong> {error}
+        </div>
+      )}
 
-      <div className="detail-grid">
-        {/* Map View */}
-        <div className="map-wrapper">
+      {/* Main Working Layout: Map Worksurface + Inspector Side Drawer */}
+      <div className="split-layout-65-35">
+        {/* Working Map Surface */}
+        <div className="map-worksurface">
           <MapContainer
             center={defaultCenter}
             zoom={13}
             scrollWheelZoom={true}
-            className="map-container"
+            className="map-tall"
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -135,28 +172,26 @@ export default function MapPage() {
                 key={inc.id}
                 position={[parseFloat(inc.latitude), parseFloat(inc.longitude)]}
                 icon={createCategoryIcon(inc.category, inc.severity)}
+                eventHandlers={{
+                  click: () => setSelectedIncident(inc),
+                }}
               >
                 <Popup>
                   <div style={{ minWidth: "200px" }}>
-                    <div style={{ display: "flex", gap: "0.3rem", marginBottom: "0.4rem", flexWrap: "wrap" }}>
-                      <span className={`badge badge-${inc.category?.toLowerCase()?.replace("_", "-")}`}>
-                        {inc.category?.replace("_", " ")}
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+                      <span className="category-tag">{inc.category?.replace("_", " ")}</span>
+                      <span className={`status-pill ${inc.status?.toLowerCase()?.replace("_", "-")}`}>
+                        {inc.status}
                       </span>
-                      <span className={`badge badge-${inc.status?.toLowerCase()?.replace("_", "-")}`}>
-                        {inc.status?.replace("_", " ")}
-                      </span>
-                      {inc.syntheticDemo && <span className="badge badge-synthetic">DEMO</span>}
                     </div>
-
-                    <h4 style={{ fontSize: "0.95rem", margin: "0.25rem 0" }}>
-                      {inc.locationLabel || "Incident Location"}
-                    </h4>
-                    <p style={{ fontSize: "0.8rem", color: "var(--gray-600)", margin: "0.3rem 0 0.6rem 0" }}>
-                      {inc.summary?.slice(0, 100)}...
+                    <div style={{ fontWeight: 600, fontSize: "0.88rem", margin: "0.2rem 0" }}>
+                      {inc.locationLabel || "Incident location"}
+                    </div>
+                    <p style={{ fontSize: "0.78rem", color: "var(--ink-secondary)", margin: "0.3rem 0 0.5rem" }}>
+                      {inc.summary?.slice(0, 90)}...
                     </p>
-
-                    <Link to={`/incidents/${inc.id}`} className="btn btn-primary btn-sm" style={{ width: "100%", textAlign: "center" }}>
-                      View Full Details &rarr;
+                    <Link to={`/incidents/${inc.id}`} className="btn btn-primary btn-sm" style={{ width: "100%", justifyContent: "center" }}>
+                      Open dossier
                     </Link>
                   </div>
                 </Popup>
@@ -173,79 +208,130 @@ export default function MapPage() {
                 >
                   <Popup>
                     <div>
-                      <span className="badge badge-high" style={{ marginBottom: "0.4rem" }}>
-                        HOTSPOT CLUSTER
-                      </span>
-                      <h4 style={{ margin: "0.3rem 0" }}>
-                        {hot.incidentCount} Recurring Incidents
-                      </h4>
-                      <p style={{ fontSize: "0.8rem", color: "var(--gray-600)" }}>
-                        Dominant Category: <strong>{hot.dominantCategory}</strong><br />
+                      <div className="tag-notice" style={{ marginBottom: "0.3rem", width: "fit-content" }}>
+                        RECURRING HOTSPOT
+                      </div>
+                      <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>
+                        {hot.incidentCount} Historical failures
+                      </div>
+                      <p style={{ fontSize: "0.78rem", color: "var(--ink-secondary)", margin: "0.3rem 0" }}>
+                        Dominant type: <strong>{hot.dominantCategory?.replace("_", " ")}</strong><br />
                         Unresolved: <strong>{hot.unresolvedCount}</strong><br />
-                        Heuristic Score: <strong>{hot.heuristicScore}</strong> ({hot.heuristicLabel})
+                        Heuristic score: <strong>{hot.heuristicScore}</strong> ({hot.heuristicLabel})
                       </p>
-                      {hot.syntheticDemo && (
-                        <p style={{ fontSize: "0.75rem", color: "var(--gray-500)", fontStyle: "italic", marginTop: "0.3rem" }}>
-                          Demonstration cluster.
-                        </p>
-                      )}
                     </div>
                   </Popup>
                 </Marker>
               ))}
           </MapContainer>
+
+          {/* Understated Map Legend Strip */}
+          <div className="map-legend-strip">
+            <span style={{ fontWeight: 600, textTransform: "uppercase", fontSize: "0.7rem", letterSpacing: "0.05em", color: "var(--ink-muted)" }}>
+              Legend:
+            </span>
+            <div className="legend-key">
+              <span className="legend-dot" style={{ backgroundColor: "#24587a" }}></span>
+              <span>Waterlogging</span>
+            </div>
+            <div className="legend-key">
+              <span className="legend-dot" style={{ backgroundColor: "#2b7496" }}></span>
+              <span>Pipe leak</span>
+            </div>
+            <div className="legend-key">
+              <span className="legend-dot" style={{ backgroundColor: "#a15a03" }}></span>
+              <span>Blocked drain</span>
+            </div>
+            <div className="legend-key">
+              <span className="legend-dot" style={{ backgroundColor: "#a82020" }}></span>
+              <span>Water shortage</span>
+            </div>
+            {showHotspots && (
+              <div className="legend-key">
+                <span className="legend-dot" style={{ backgroundColor: "#73808c", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "8px" }}>#</span>
+                <span>Spatial cluster</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Sidebar List of Filtered Incidents */}
-        <div className="card" style={{ height: "580px", display: "flex", flexDirection: "column", padding: "1.25rem" }}>
-          <div className="card-header" style={{ marginBottom: "0.75rem" }}>
+        {/* Working Incident Inspector Side Panel */}
+        <div className="panel" style={{ margin: 0 }}>
+          <div className="panel-header">
             <div>
-              <h3>Visible Incidents ({incidents.length})</h3>
-              <p>Click any record to inspect</p>
+              <h2 className="panel-title">Inspection drawer</h2>
+              <span className="panel-sub">Select any marker on the map to inspect</span>
             </div>
           </div>
 
-          <div style={{ overflowY: "auto", flex: 1, paddingRight: "0.25rem" }}>
-            {incidents.length === 0 ? (
-              <div className="empty-state">
-                <p>No incidents match the active filter criteria.</p>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                {incidents.map((inc) => (
-                  <div
-                    key={inc.id}
-                    style={{
-                      border: "1px solid var(--gray-200)",
-                      borderRadius: "var(--radius-sm)",
-                      padding: "0.75rem",
-                      background: "var(--gray-50)",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem" }}>
-                      <span className={`badge badge-${inc.category?.toLowerCase()?.replace("_", "-")}`}>
-                        {inc.category?.replace("_", " ")}
-                      </span>
-                      <span className={`badge badge-${inc.status?.toLowerCase()?.replace("_", "-")}`}>
-                        {inc.status?.replace("_", " ")}
-                      </span>
+          <div className="panel-body">
+            {selectedIncident ? (
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
+                  <span className={`status-pill ${selectedIncident.status?.toLowerCase()?.replace("_", "-")}`}>
+                    {selectedIncident.status?.replace("_", " ")}
+                  </span>
+                  <span className={`priority-flag ${selectedIncident.severity?.toLowerCase() || "moderate"}`}>
+                    {selectedIncident.severity} PRIORITY
+                  </span>
+                  {selectedIncident.syntheticDemo && (
+                    <span className="tag-notice">SYNTHETIC DEMO</span>
+                  )}
+                </div>
+
+                <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "1.2rem", fontWeight: 600, color: "var(--ink-primary)", marginBottom: "0.4rem" }}>
+                  {selectedIncident.locationLabel || "Unlabelled location"}
+                </h3>
+
+                <p style={{ fontSize: "0.84rem", color: "var(--ink-secondary)", lineHeight: 1.5, marginBottom: "1rem" }}>
+                  {selectedIncident.summary}
+                </p>
+
+                <div className="dossier-meta-grid">
+                  <div className="dossier-meta-item">
+                    <label>Setting</label>
+                    <span>{selectedIncident.locationType?.replace("_", " ")}</span>
+                  </div>
+                  <div className="dossier-meta-item">
+                    <label>Reported date</label>
+                    <span>
+                      {selectedIncident.firstObservedAt ? new Date(selectedIncident.firstObservedAt).toLocaleDateString() : "Recent"}
+                    </span>
+                  </div>
+                  <div className="dossier-meta-item">
+                    <label>Coordinates</label>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.76rem" }}>
+                      {parseFloat(selectedIncident.latitude).toFixed(4)}, {parseFloat(selectedIncident.longitude).toFixed(4)}
+                    </span>
+                  </div>
+                  <div className="dossier-meta-item">
+                    <label>Recurrence</label>
+                    <span>{selectedIncident.suspectedDuplicate ? "Candidate repeat" : "First record"}</span>
+                  </div>
+                </div>
+
+                {selectedIncident.recommendedNextAction && (
+                  <div style={{ background: "var(--bg-subtle)", padding: "0.75rem", borderLeft: "3px solid var(--water-primary)", borderRadius: "var(--radius-xs)", marginBottom: "1.25rem" }}>
+                    <div style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", color: "var(--water-primary)", letterSpacing: "0.04em" }}>
+                      Advisory next action
                     </div>
-                    <div style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--gray-900)" }}>
-                      {inc.locationLabel || `${inc.latitude.toFixed(4)}, ${inc.longitude.toFixed(4)}`}
-                    </div>
-                    <div style={{ fontSize: "0.75rem", color: "var(--gray-600)", margin: "0.3rem 0" }}>
-                      {inc.summary?.slice(0, 80)}...
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.5rem" }}>
-                      <span style={{ fontSize: "0.7rem", color: "var(--gray-500)" }}>
-                        {inc.firstObservedAt ? new Date(inc.firstObservedAt).toLocaleDateString() : ""}
-                      </span>
-                      <Link to={`/incidents/${inc.id}`} className="btn btn-secondary btn-sm" style={{ padding: "0.2rem 0.5rem" }}>
-                        View Details &rarr;
-                      </Link>
+                    <div style={{ fontSize: "0.8rem", color: "var(--ink-primary)", marginTop: "0.2rem" }}>
+                      {selectedIncident.recommendedNextAction}
                     </div>
                   </div>
-                ))}
+                )}
+
+                <Link
+                  to={`/incidents/${selectedIncident.id}`}
+                  className="btn btn-primary"
+                  style={{ width: "100%", justifyContent: "center" }}
+                >
+                  Open complete dossier & verification <IconArrowRight size={13} />
+                </Link>
+              </div>
+            ) : (
+              <div style={{ color: "var(--ink-muted)", fontSize: "0.85rem", textAlign: "center", padding: "2rem 0" }}>
+                Click any marker on the map to inspect its field findings and historical records.
               </div>
             )}
           </div>

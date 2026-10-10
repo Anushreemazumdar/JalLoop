@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../services/api.js";
+import {
+  IconAlertTriangle,
+  IconCheckCircle,
+  IconLayers,
+  IconArrowRight,
+  IconPlus,
+} from "../components/Icons.jsx";
 
 const DEFAULT_COEFFICIENTS = {
   ROOF: "0.85",
@@ -15,16 +22,16 @@ export default function RecoveryPlannerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Forms
+  // Tabs
   const [activeTab, setActiveTab] = useState("assess"); // "assess" | "catchment" | "rainfall"
 
-  // 1. Assessment Form
+  // Assessment form
   const [selectedCatchmentId, setSelectedCatchmentId] = useState("");
   const [rainfallInputMm, setRainfallInputMm] = useState("25.0");
   const [assessSubmitting, setAssessSubmitting] = useState(false);
   const [latestAssessment, setLatestAssessment] = useState(null);
 
-  // 2. Catchment Form
+  // Catchment form
   const [catchmentForm, setCatchmentForm] = useState({
     name: "",
     areaSqM: "1200",
@@ -38,11 +45,11 @@ export default function RecoveryPlannerPage() {
     longitude: 73.8500,
   });
 
-  // 3. Rainfall Form
+  // Rainfall form
   const [rainfallForm, setRainfallForm] = useState({
     rainfallMm: "25.0",
     locationLabel: "Central Pune Gauge",
-    sourceNote: "User verified local rain gauge",
+    sourceNote: "Verified municipal rain gauge",
     latitude: 18.5290,
     longitude: 73.8500,
     observedAt: new Date().toISOString().slice(0, 16),
@@ -68,7 +75,7 @@ export default function RecoveryPlannerPage() {
         setSelectedCatchmentId(catchmentList[0].id);
       }
     } catch (err) {
-      setError(err.message || "Failed to load recovery data");
+      setError(err.message || "Failed to load recovery records");
     } finally {
       setLoading(false);
     }
@@ -99,7 +106,7 @@ export default function RecoveryPlannerPage() {
         longitude: parseFloat(catchmentForm.longitude),
       };
       await api.createCatchment(payload);
-      setNotification("Catchment structure registered successfully.");
+      setNotification("Catchment structure registered in municipal inventory.");
       setCatchmentForm((p) => ({ ...p, name: "" }));
       loadData();
       setActiveTab("assess");
@@ -120,7 +127,7 @@ export default function RecoveryPlannerPage() {
         observedAt: new Date(rainfallForm.observedAt).toISOString(),
       };
       await api.createRainfall(payload);
-      setNotification("Rainfall observation logged successfully.");
+      setNotification("Rainfall observation committed to ledger.");
       loadData();
       setActiveTab("assess");
     } catch (err) {
@@ -131,7 +138,7 @@ export default function RecoveryPlannerPage() {
   async function handleRunAssessment(e) {
     e.preventDefault();
     if (!selectedCatchmentId) {
-      setError("Please select or register a catchment first.");
+      setError("Please select a registered catchment.");
       return;
     }
     try {
@@ -143,7 +150,7 @@ export default function RecoveryPlannerPage() {
       };
       const res = await api.createAssessment(payload);
       setLatestAssessment(res);
-      setNotification("Recovery calculation completed!");
+      setNotification("Rational assessment calculation complete.");
       loadData();
     } catch (err) {
       setError(err.message);
@@ -156,15 +163,15 @@ export default function RecoveryPlannerPage() {
     try {
       await api.createProject({
         assessmentId,
-        title: `Harvesting Initiative — Assessment ${assessmentId.slice(0, 8)}`,
+        title: `Harvesting Initiative &mdash; Assessment ${assessmentId.slice(0, 8)}`,
       });
-      setNotification("Assessment promoted to candidate Recovery Project! View in Project Review tab.");
+      setNotification("Assessment promoted to candidate project in review ledger.");
     } catch (err) {
       setError(err.message);
     }
   }
 
-  // Live theoretical preview calculation
+  // Live dynamic calculation preview
   const currentCatchment = catchments.find((c) => c.id === selectedCatchmentId);
   const pMm = parseFloat(rainfallInputMm) || 0;
   const aSqM = currentCatchment ? parseFloat(currentCatchment.areaSqM) : 0;
@@ -178,215 +185,244 @@ export default function RecoveryPlannerPage() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="editorial-header">
         <div>
-          <h2>Rainwater Recovery Calculator & Assessment</h2>
-          <p>
-            Estimate candidate runoff from municipal roofs and paved surfaces using deterministic hydrological equations.
+          <h1 className="editorial-title">Rainwater recovery planning</h1>
+          <p className="editorial-subtext">
+            Transparent rational method calculations for candidate stormwater harvesting from municipal rooftops and paved grounds.
           </p>
         </div>
-        <div className="header-actions">
+        <div className="header-action-row">
           <Link to="/recovery/review" className="btn btn-secondary">
-            Project Review & Verification &rarr;
+            Projects & verification ledger &rarr;
           </Link>
         </div>
       </div>
 
-      {/* Hydrology Formula & Safety Callout */}
-      <div className="card" style={{ background: "linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 100%)", border: "1px solid #99f6e4" }}>
-        <h3 style={{ color: "var(--primary-dark)", fontSize: "1.1rem", marginBottom: "0.5rem" }}>
-          Standard Rational Hydrology Formula: \(V = P \times A \times C / 1000\)
-        </h3>
-        <p style={{ fontSize: "0.875rem", color: "var(--gray-700)", lineHeight: 1.6 }}>
-          Where <strong>\(P\)</strong> is rainfall in millimetres, <strong>\(A\)</strong> is catchment area in square metres, <strong>\(C\)</strong> is dimensionless runoff coefficient, and <strong>\(V\)</strong> is theoretical runoff volume in cubic metres (\(m^3\)).
-        </p>
-        <div className="alert alert-warning" style={{ marginTop: "0.75rem", marginBottom: 0 }}>
-          <strong>Critical Safety Directive:</strong> Road runoff or floodwater carries heavy oil, grit, and contamination. <em>JalLoop never automatically approves contaminated runoff for reuse.</em> Mandatory human lab testing and engineering review are required.
+      {/* Engineering Equation Callout & Safety Directives */}
+      <div className="panel" style={{ backgroundColor: "var(--bg-surface)", borderLeft: "4px solid var(--water-primary)" }}>
+        <div className="panel-body">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: "0.5rem" }}>
+            <span style={{ fontFamily: "var(--font-serif)", fontSize: "1.05rem", fontWeight: 600, color: "var(--ink-primary)" }}>
+              Rational Hydrological Method: \(V = P \cdot A \cdot C / 1000\)
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--ink-muted)" }}>
+              UNITS: P (mm) &bull; A (m²) &bull; C (dimensionless) &bull; V (m³)
+            </span>
+          </div>
+          <p style={{ fontSize: "0.82rem", color: "var(--ink-secondary)", marginTop: "0.4rem", lineHeight: 1.5 }}>
+            Theoretical runoff is strictly calculated as rainfall depth (\(P\)) over catchment surface (\(A\)) multiplied by runoff coefficient (\(C\)). Yield is constrained by storage capacity (\(S\)) and pre-filter collection efficiency.
+          </p>
+
+          <div className="civic-callout warning" style={{ marginTop: "0.75rem", marginBottom: 0 }}>
+            <IconAlertTriangle size={16} style={{ flexShrink: 0, marginTop: "2px" }} />
+            <div>
+              <strong>Safety Directive:</strong> Contaminated road runoff or floodwaters are <em>never automatically approved for reuse</em>. Mandatory water quality testing and human engineering review are required.
+            </div>
+          </div>
         </div>
       </div>
 
       {notification && (
-        <div className="alert alert-success" style={{ display: "flex", justifyContent: "space-between" }}>
+        <div className="civic-callout success">
+          <IconCheckCircle size={16} style={{ flexShrink: 0, marginTop: "2px" }} />
           <span>{notification}</span>
-          <button className="btn btn-sm btn-secondary" onClick={() => setNotification(null)}>Dismiss</button>
         </div>
       )}
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      {error && (
+        <div className="civic-callout danger">
+          <strong>Error:</strong> {error}
+        </div>
+      )}
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem", borderBottom: "1px solid var(--gray-200)", paddingBottom: "0.5rem" }}>
+      <div style={{ display: "flex", gap: "0.35rem", marginBottom: "1.5rem", borderBottom: "1px solid var(--border-crisp)", paddingBottom: "0.4rem" }}>
         <button
           className={`btn ${activeTab === "assess" ? "btn-primary" : "btn-secondary"}`}
           onClick={() => setActiveTab("assess")}
         >
-          1. Calculate Recovery
+          1. Calculate recovery assessment
         </button>
         <button
           className={`btn ${activeTab === "catchment" ? "btn-primary" : "btn-secondary"}`}
           onClick={() => setActiveTab("catchment")}
         >
-          2. Register Catchment
+          2. Register catchment asset
         </button>
         <button
           className={`btn ${activeTab === "rainfall" ? "btn-primary" : "btn-secondary"}`}
           onClick={() => setActiveTab("rainfall")}
         >
-          3. Log Rainfall Observation
+          3. Log rainfall observation
         </button>
       </div>
 
-      {/* TAB 1: CALCULATE RECOVERY */}
+      {/* TAB 1: RUN CALCULATION */}
       {activeTab === "assess" && (
-        <div className="grid-2">
-          {/* Assessment Trigger Form */}
-          <div className="card">
-            <div className="card-header">
+        <div className="split-layout-50-50">
+          {/* Assessment Input Form */}
+          <form onSubmit={handleRunAssessment} className="panel">
+            <div className="panel-header">
               <div>
-                <h3>Hydrological Assessment Input</h3>
-                <p>Select asset catchment and precipitation</p>
+                <h2 className="panel-title">Hydrological assessment inputs</h2>
+                <span className="panel-sub">Select catchment asset and precipitation depth</span>
               </div>
             </div>
 
-            <form onSubmit={handleRunAssessment}>
-              <div className="form-group">
-                <label>Select Target Catchment *</label>
-                {catchments.length === 0 ? (
-                  <div className="alert alert-warning" style={{ fontSize: "0.85rem" }}>
-                    No catchments registered yet. Please click the "Register Catchment" tab above.
-                  </div>
-                ) : (
-                  <select
-                    value={selectedCatchmentId}
-                    onChange={(e) => setSelectedCatchmentId(e.target.value)}
-                    className="form-control"
+            <div className="panel-body">
+              <div className="form-section">
+                <div>
+                  <label className="field-label">Target catchment asset *</label>
+                  {catchments.length === 0 ? (
+                    <div className="civic-callout warning">
+                      No catchments registered yet. Click the "Register catchment asset" tab above.
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedCatchmentId}
+                      onChange={(e) => setSelectedCatchmentId(e.target.value)}
+                      className="select-input"
+                      required
+                    >
+                      {catchments.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.surfaceType}, {c.areaSqM} m²)
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div>
+                  <label className="field-label">Precipitation depth (P in mm) *</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    value={rainfallInputMm}
+                    onChange={(e) => setRainfallInputMm(e.target.value)}
+                    className="text-input"
                     required
-                  >
-                    {catchments.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} ({c.surfaceType}, {c.areaSqM} m²)
-                      </option>
-                    ))}
-                  </select>
+                  />
+                  <span className="field-hint">Measured rainfall event or design storm value</span>
+                </div>
+
+                {/* Calculation Transparency Breakdown */}
+                {currentCatchment && (
+                  <div style={{ background: "var(--bg-subtle)", border: "1px solid var(--border-light)", padding: "1rem", borderRadius: "var(--radius-xs)" }}>
+                    <div style={{ fontSize: "0.74rem", textTransform: "uppercase", fontWeight: 600, color: "var(--ink-muted)", letterSpacing: "0.04em", marginBottom: "0.5rem" }}>
+                      Transparent Equation Breakdown
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.4rem", fontSize: "0.8rem", color: "var(--ink-secondary)" }}>
+                      <div>Area (\(A\)): <strong>{currentCatchment.areaSqM} m²</strong></div>
+                      <div>Coefficient (\(C\)): <strong>{currentCatchment.runoffCoefficient}</strong></div>
+                      <div>Efficiency: <strong>{eff}</strong></div>
+                      <div>Storage cap: <strong>{cap > 0 ? `${cap} m³` : "Uncapped"}</strong></div>
+                    </div>
+
+                    <div style={{ borderTop: "1px dashed var(--border-crisp)", marginTop: "0.75rem", paddingTop: "0.75rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.84rem" }}>
+                        <span>Theoretical runoff (\(V\)):</span>
+                        <strong style={{ fontFamily: "var(--font-mono)", color: "var(--ink-primary)" }}>
+                          {previewRunoff.toFixed(2)} m³
+                        </strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.84rem", marginTop: "0.2rem" }}>
+                        <span>Potentially collectible:</span>
+                        <strong style={{ fontFamily: "var(--font-mono)", color: "var(--water-primary)" }}>
+                          {previewCollectible.toFixed(2)} m³
+                        </strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", marginTop: "0.3rem" }}>
+                        <span style={{ fontWeight: 600 }}>Storage-constrained yield:</span>
+                        <strong style={{ fontFamily: "var(--font-mono)", color: "var(--verified-ink)" }}>
+                          {previewConstrained.toFixed(2)} m³
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
                 )}
-              </div>
-
-              <div className="form-group">
-                <label>Rainfall Depth (P in mm) *</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  value={rainfallInputMm}
-                  onChange={(e) => setRainfallInputMm(e.target.value)}
-                  className="form-control"
-                  required
-                />
-                <span className="form-help">Observed or forecasted rainfall event</span>
-              </div>
-
-              {/* Dynamic Live Calculation Preview Card */}
-              {currentCatchment && (
-                <div style={{ background: "var(--gray-50)", border: "1px solid var(--gray-200)", padding: "1rem", borderRadius: "var(--radius-sm)", marginBottom: "1.25rem" }}>
-                  <h4 style={{ fontSize: "0.85rem", color: "var(--gray-700)", marginBottom: "0.5rem" }}>Live Rational Method Estimation:</h4>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", fontSize: "0.8rem" }}>
-                    <div>Catchment Area (\(A\)): <strong>{currentCatchment.areaSqM} m²</strong></div>
-                    <div>Runoff Coeff (\(C\)): <strong>{currentCatchment.runoffCoefficient}</strong></div>
-                    <div>Collection Efficiency: <strong>{eff}</strong></div>
-                    <div>Storage Cap: <strong>{cap > 0 ? `${cap} m³` : "Uncapped"}</strong></div>
-                  </div>
-
-                  <div style={{ marginTop: "0.75rem", borderTop: "1px dashed var(--gray-300)", paddingTop: "0.75rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
-                      <span>Theoretical Runoff (\(V\)):</span>
-                      <strong style={{ color: "var(--primary-dark)" }}>{previewRunoff.toFixed(2)} m³</strong>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginTop: "0.2rem" }}>
-                      <span>Potentially Collectible:</span>
-                      <strong style={{ color: "var(--teal)" }}>{previewCollectible.toFixed(2)} m³</strong>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", marginTop: "0.2rem" }}>
-                      <span>Storage-Constrained Yield:</span>
-                      <strong style={{ color: "var(--emerald)" }}>{previewConstrained.toFixed(2)} m³</strong>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="btn btn-teal"
-                style={{ width: "100%" }}
-                disabled={assessSubmitting || !selectedCatchmentId}
-              >
-                {assessSubmitting ? "Computing Hydrology..." : "Generate Official Assessment Record"}
-              </button>
-            </form>
-          </div>
-
-          {/* Assessment Result or Historical Assessments */}
-          <div>
-            {latestAssessment && (
-              <div className="card" style={{ border: "2px solid var(--teal)" }}>
-                <div className="card-header">
-                  <div>
-                    <h3 style={{ color: "var(--teal)" }}>Assessment Record Created</h3>
-                    <p>Canonical ID: {latestAssessment.id}</p>
-                  </div>
-                  <span className="badge badge-under-review">PENDING REVIEW</span>
-                </div>
-
-                <div className="stats-grid" style={{ gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
-                  <div className="stat-card" style={{ padding: "0.75rem" }}>
-                    <div className="stat-card-title">Theoretical Runoff</div>
-                    <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "var(--primary)" }}>
-                      {latestAssessment.theoreticalRunoffM3} m³
-                    </div>
-                  </div>
-                  <div className="stat-card" style={{ padding: "0.75rem" }}>
-                    <div className="stat-card-title">Storage Constrained</div>
-                    <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "var(--emerald)" }}>
-                      {latestAssessment.storageConstrainedM3} m³
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ fontSize: "0.8rem", color: "var(--gray-600)", marginBottom: "0.75rem" }}>
-                  <strong>Assumptions:</strong> {latestAssessment.assumptions}
-                </div>
-                <div style={{ fontSize: "0.8rem", color: "#9a3412", marginBottom: "1rem" }}>
-                  <strong>Safety Notice:</strong> {latestAssessment.safetyNotes}
-                </div>
 
                 <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => handlePromoteToProject(latestAssessment.id)}
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ width: "100%" }}
+                  disabled={assessSubmitting || !selectedCatchmentId}
                 >
-                  Promote to Recovery Project Candidate &rarr;
+                  {assessSubmitting ? "Calculating..." : "Commit recovery assessment"}
                 </button>
+              </div>
+            </div>
+          </form>
+
+          {/* Assessment Results & Register */}
+          <div>
+            {latestAssessment && (
+              <div className="panel" style={{ border: "1px solid var(--water-border)", backgroundColor: "var(--water-tint)" }}>
+                <div className="panel-header" style={{ borderBottomColor: "var(--water-border)" }}>
+                  <div>
+                    <h2 className="panel-title" style={{ color: "var(--water-primary)" }}>Assessment committed</h2>
+                    <span className="panel-sub" style={{ fontFamily: "var(--font-mono)" }}>ID: {latestAssessment.id.slice(0, 8)}</span>
+                  </div>
+                  <span className="status-pill under-review">PENDING REVIEW</span>
+                </div>
+
+                <div className="panel-body">
+                  <div className="ledger-banner" style={{ marginBottom: "1rem" }}>
+                    <div className="ledger-cell" style={{ padding: "0.75rem 1rem" }}>
+                      <span className="ledger-cell-title">Theoretical runoff</span>
+                      <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "var(--water-primary)" }}>
+                        {latestAssessment.theoreticalRunoffM3} m³
+                      </div>
+                    </div>
+                    <div className="ledger-cell verified" style={{ padding: "0.75rem 1rem" }}>
+                      <span className="ledger-cell-title">Storage constrained</span>
+                      <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "var(--verified-ink)" }}>
+                        {latestAssessment.storageConstrainedM3} m³
+                      </div>
+                    </div>
+                  </div>
+
+                  <p style={{ fontSize: "0.8rem", color: "var(--ink-secondary)", marginBottom: "0.5rem" }}>
+                    <strong>Assumptions:</strong> {latestAssessment.assumptions}
+                  </p>
+                  <p style={{ fontSize: "0.8rem", color: "var(--warning-amber)", marginBottom: "1rem" }}>
+                    <strong>Safety Directive:</strong> {latestAssessment.safetyNotes}
+                  </p>
+
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => handlePromoteToProject(latestAssessment.id)}
+                  >
+                    Promote to candidate project in review ledger &rarr;
+                  </button>
+                </div>
               </div>
             )}
 
-            <div className="card">
-              <div className="card-header">
+            {/* Assessment Log Table */}
+            <div className="panel">
+              <div className="panel-header">
                 <div>
-                  <h3>Logged Assessments ({assessments.length})</h3>
-                  <p>Historical rational method analyses</p>
+                  <h2 className="panel-title">Historical assessments ({assessments.length})</h2>
+                  <span className="panel-sub">Calculated rational method runs</span>
                 </div>
               </div>
 
               {assessments.length === 0 ? (
-                <div className="empty-state">
-                  <p>No recovery assessments recorded yet.</p>
+                <div className="panel-body" style={{ color: "var(--ink-muted)", fontSize: "0.82rem" }}>
+                  No recovery assessments recorded yet.
                 </div>
               ) : (
-                <div className="table-container">
-                  <table className="data-table">
+                <div className="table-wrap">
+                  <table className="civic-table">
                     <thead>
                       <tr>
                         <th>Catchment</th>
                         <th>Rainfall</th>
-                        <th>Runoff / Yield</th>
+                        <th>Yield (m³)</th>
                         <th>Status</th>
                         <th>Action</th>
                       </tr>
@@ -396,22 +432,27 @@ export default function RecoveryPlannerPage() {
                         <tr key={a.id}>
                           <td>
                             <strong>{a.catchmentName}</strong>
-                            {a.syntheticDemo && <span className="badge badge-synthetic" style={{ marginLeft: "0.3rem" }}>DEMO</span>}
+                            {a.syntheticDemo && (
+                              <span className="tag-notice" style={{ display: "block", marginTop: "0.15rem", width: "fit-content" }}>
+                                DEMO
+                              </span>
+                            )}
                           </td>
-                          <td>{a.rainfallMm} mm</td>
+                          <td style={{ fontFamily: "var(--font-mono)" }}>{a.rainfallMm} mm</td>
                           <td>
-                            <span title="Theoretical">{a.theoreticalRunoffM3} m³ (theor)</span><br />
-                            <strong style={{ color: "var(--emerald)" }}>{a.storageConstrainedM3} m³ (yield)</strong>
+                            <strong style={{ color: "var(--verified-ink)", fontFamily: "var(--font-mono)" }}>
+                              {a.storageConstrainedM3} m³
+                            </strong>
                           </td>
                           <td>
-                            <span className="badge badge-under-review">{a.reviewStatus}</span>
+                            <span className="status-pill under-review">{a.reviewStatus}</span>
                           </td>
                           <td>
                             <button
                               className="btn btn-secondary btn-sm"
                               onClick={() => handlePromoteToProject(a.id)}
                             >
-                              Promote
+                              Promote &rarr;
                             </button>
                           </td>
                         </tr>
@@ -427,222 +468,229 @@ export default function RecoveryPlannerPage() {
 
       {/* TAB 2: REGISTER CATCHMENT */}
       {activeTab === "catchment" && (
-        <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-          <form onSubmit={handleCreateCatchment} className="card">
-            <div className="card-header">
+        <div style={{ maxWidth: "780px", margin: "0 auto" }}>
+          <form onSubmit={handleCreateCatchment} className="panel">
+            <div className="panel-header">
               <div>
-                <h3>Register Water Catchment Asset</h3>
-                <p>Register school roofs, parking pavements, or housing society basins</p>
+                <h2 className="panel-title">Register municipal catchment asset</h2>
+                <span className="panel-sub">Log public rooftops, parking areas, or retention grounds</span>
               </div>
             </div>
 
-            <div className="form-group">
-              <label>Catchment Name / Identifier *</label>
-              <input
-                type="text"
-                placeholder="e.g. Pune Municipal Model School Rooftop"
-                value={catchmentForm.name}
-                onChange={(e) => setCatchmentForm((p) => ({ ...p, name: e.target.value }))}
-                className="form-control"
-                required
-              />
+            <div className="panel-body">
+              <div className="form-section">
+                <div>
+                  <label className="field-label">Catchment identifier / name *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Pune Municipal Model School Rooftop"
+                    value={catchmentForm.name}
+                    onChange={(e) => setCatchmentForm((p) => ({ ...p, name: e.target.value }))}
+                    className="text-input"
+                    required
+                  />
+                </div>
+
+                <div className="form-grid-2">
+                  <div>
+                    <label className="field-label">Surface type *</label>
+                    <select
+                      value={catchmentForm.surfaceType}
+                      onChange={(e) => handleSurfaceTypeChange(e.target.value)}
+                      className="select-input"
+                    >
+                      <option value="ROOF">ROOFTOP (C ~ 0.85)</option>
+                      <option value="PAVED_GROUND">PAVED GROUND (C ~ 0.75)</option>
+                      <option value="ROAD_SURFACE">ROAD SURFACE (C ~ 0.70 - Lab testing required)</option>
+                      <option value="UNPAVED_SOIL">UNPAVED SOIL / LAWN (C ~ 0.20)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="field-label">Catchment surface area (A in m²) *</label>
+                    <input
+                      type="number"
+                      step="1"
+                      min="1"
+                      value={catchmentForm.areaSqM}
+                      onChange={(e) => setCatchmentForm((p) => ({ ...p, areaSqM: e.target.value }))}
+                      className="text-input"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-grid-3">
+                  <div>
+                    <label className="field-label">Runoff coefficient (C) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.0"
+                      max="1.0"
+                      value={catchmentForm.runoffCoefficient}
+                      onChange={(e) => setCatchmentForm((p) => ({ ...p, runoffCoefficient: e.target.value }))}
+                      className="text-input"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="field-label">Storage capacity (m³)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0.0"
+                      value={catchmentForm.storageCapacityM3}
+                      onChange={(e) => setCatchmentForm((p) => ({ ...p, storageCapacityM3: e.target.value }))}
+                      className="text-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="field-label">Efficiency factor (0.0 - 1.0)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.0"
+                      max="1.0"
+                      value={catchmentForm.collectionEfficiency}
+                      onChange={(e) => setCatchmentForm((p) => ({ ...p, collectionEfficiency: e.target.value }))}
+                      className="text-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-grid-2">
+                  <div>
+                    <label className="field-label">Contamination classification *</label>
+                    <select
+                      value={catchmentForm.contaminationFlag}
+                      onChange={(e) => setCatchmentForm((p) => ({ ...p, contaminationFlag: e.target.value }))}
+                      className="select-input"
+                    >
+                      <option value="NONE_DECLARED">None declared (Standard clean roof)</option>
+                      <option value="ROAD_RUNOFF">Road runoff (Heavy oil/grit &bull; Lab test required)</option>
+                      <option value="SUSPECTED_SEWAGE_MIX">Suspected sewage mix (Strict review)</option>
+                      <option value="SILT_AND_DEBRIS">Silt and debris (Pre-filter mandatory)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="field-label">Proposed non-potable reuse</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Garden percolation, municipal tanker filling"
+                      value={catchmentForm.proposedUse}
+                      onChange={(e) => setCatchmentForm((p) => ({ ...p, proposedUse: e.target.value }))}
+                      className="text-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-grid-2">
+                  <div>
+                    <label className="field-label" style={{ fontSize: "0.72rem" }}>Latitude</label>
+                    <input
+                      type="number"
+                      step="0.0000001"
+                      value={catchmentForm.latitude}
+                      onChange={(e) => setCatchmentForm((p) => ({ ...p, latitude: e.target.value }))}
+                      className="text-input"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="field-label" style={{ fontSize: "0.72rem" }}>Longitude</label>
+                    <input
+                      type="number"
+                      step="0.0000001"
+                      value={catchmentForm.longitude}
+                      onChange={(e) => setCatchmentForm((p) => ({ ...p, longitude: e.target.value }))}
+                      className="text-input"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button type="submit" className="btn btn-primary" style={{ width: "100%" }}>
+                  Register catchment asset
+                </button>
+              </div>
             </div>
-
-            <div className="grid-2">
-              <div className="form-group">
-                <label>Surface Type *</label>
-                <select
-                  value={catchmentForm.surfaceType}
-                  onChange={(e) => handleSurfaceTypeChange(e.target.value)}
-                  className="form-control"
-                >
-                  <option value="ROOF">ROOF (C ~ 0.85)</option>
-                  <option value="PAVED_GROUND">PAVED GROUND (C ~ 0.75)</option>
-                  <option value="ROAD_SURFACE">ROAD SURFACE (C ~ 0.70)</option>
-                  <option value="UNPAVED_SOIL">UNPAVED SOIL / LAWN (C ~ 0.20)</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Catchment Area (A in m²) *</label>
-                <input
-                  type="number"
-                  step="1"
-                  min="1"
-                  value={catchmentForm.areaSqM}
-                  onChange={(e) => setCatchmentForm((p) => ({ ...p, areaSqM: e.target.value }))}
-                  className="form-control"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid-3">
-              <div className="form-group">
-                <label>Runoff Coefficient (C: 0.0 - 1.0) *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.0"
-                  max="1.0"
-                  value={catchmentForm.runoffCoefficient}
-                  onChange={(e) => setCatchmentForm((p) => ({ ...p, runoffCoefficient: e.target.value }))}
-                  className="form-control"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Storage Capacity (m³)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0.0"
-                  value={catchmentForm.storageCapacityM3}
-                  onChange={(e) => setCatchmentForm((p) => ({ ...p, storageCapacityM3: e.target.value }))}
-                  className="form-control"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Collection Efficiency (0.0 - 1.0)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.0"
-                  max="1.0"
-                  value={catchmentForm.collectionEfficiency}
-                  onChange={(e) => setCatchmentForm((p) => ({ ...p, collectionEfficiency: e.target.value }))}
-                  className="form-control"
-                />
-              </div>
-            </div>
-
-            <div className="grid-2">
-              <div className="form-group">
-                <label>Contamination Classification *</label>
-                <select
-                  value={catchmentForm.contaminationFlag}
-                  onChange={(e) => setCatchmentForm((p) => ({ ...p, contaminationFlag: e.target.value }))}
-                  className="form-control"
-                >
-                  <option value="NONE_DECLARED">None Declared (Clean roof)</option>
-                  <option value="ROAD_RUNOFF">Road Runoff (Heavy oil/grit - Lab review required)</option>
-                  <option value="SUSPECTED_SEWAGE_MIX">Suspected Sewage Mix (Strict human review)</option>
-                  <option value="SILT_AND_DEBRIS">Silt & Debris (Pre-filtration required)</option>
-                  <option value="INDUSTRIAL_DRAINAGE">Industrial Drainage (Prohibited reuse)</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Proposed Non-Potable Use</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Garden watering, toilet flushing, groundwater percolation"
-                  value={catchmentForm.proposedUse}
-                  onChange={(e) => setCatchmentForm((p) => ({ ...p, proposedUse: e.target.value }))}
-                  className="form-control"
-                />
-              </div>
-            </div>
-
-            <div className="grid-2">
-              <div className="form-group">
-                <label>Latitude</label>
-                <input
-                  type="number"
-                  step="0.0000001"
-                  value={catchmentForm.latitude}
-                  onChange={(e) => setCatchmentForm((p) => ({ ...p, latitude: e.target.value }))}
-                  className="form-control"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Longitude</label>
-                <input
-                  type="number"
-                  step="0.0000001"
-                  value={catchmentForm.longitude}
-                  onChange={(e) => setCatchmentForm((p) => ({ ...p, longitude: e.target.value }))}
-                  className="form-control"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                  required
-                />
-              </div>
-            </div>
-
-            <button type="submit" className="btn btn-primary" style={{ width: "100%" }}>
-              Register Catchment
-            </button>
           </form>
         </div>
       )}
 
       {/* TAB 3: LOG RAINFALL */}
       {activeTab === "rainfall" && (
-        <div style={{ maxWidth: "700px", margin: "0 auto" }}>
-          <form onSubmit={handleCreateRainfall} className="card">
-            <div className="card-header">
+        <div style={{ maxWidth: "680px", margin: "0 auto" }}>
+          <form onSubmit={handleCreateRainfall} className="panel">
+            <div className="panel-header">
               <div>
-                <h3>Record Rainfall Event</h3>
-                <p>Enter precipitation measurement from local gauge or station</p>
+                <h2 className="panel-title">Record precipitation event</h2>
+                <span className="panel-sub">Enter gauge reading for hydrological evaluation</span>
               </div>
             </div>
 
-            <div className="grid-2">
-              <div className="form-group">
-                <label>Rainfall Depth (mm) *</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  value={rainfallForm.rainfallMm}
-                  onChange={(e) => setRainfallForm((p) => ({ ...p, rainfallMm: e.target.value }))}
-                  className="form-control"
-                  required
-                />
+            <div className="panel-body">
+              <div className="form-section">
+                <div className="form-grid-2">
+                  <div>
+                    <label className="field-label">Rainfall depth (P in mm) *</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={rainfallForm.rainfallMm}
+                      onChange={(e) => setRainfallForm((p) => ({ ...p, rainfallMm: e.target.value }))}
+                      className="text-input"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="field-label">Observed timestamp *</label>
+                    <input
+                      type="datetime-local"
+                      value={rainfallForm.observedAt}
+                      onChange={(e) => setRainfallForm((p) => ({ ...p, observedAt: e.target.value }))}
+                      className="text-input"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="field-label">Gauge station landmark</label>
+                  <input
+                    type="text"
+                    value={rainfallForm.locationLabel}
+                    onChange={(e) => setRainfallForm((p) => ({ ...p, locationLabel: e.target.value }))}
+                    placeholder="e.g. Shivajinagar Weather Station"
+                    className="text-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="field-label">Measurement method / source note *</label>
+                  <input
+                    type="text"
+                    value={rainfallForm.sourceNote}
+                    onChange={(e) => setRainfallForm((p) => ({ ...p, sourceNote: e.target.value }))}
+                    placeholder="e.g. Calibrated tipping bucket gauge reading"
+                    className="text-input"
+                    required
+                  />
+                </div>
+
+                <button type="submit" className="btn btn-primary" style={{ width: "100%" }}>
+                  Commit rainfall observation
+                </button>
               </div>
-
-              <div className="form-group">
-                <label>Observed Date & Time *</label>
-                <input
-                  type="datetime-local"
-                  value={rainfallForm.observedAt}
-                  onChange={(e) => setRainfallForm((p) => ({ ...p, observedAt: e.target.value }))}
-                  className="form-control"
-                  required
-                />
-              </div>
             </div>
-
-            <div className="form-group">
-              <label>Gauge Location Label</label>
-              <input
-                type="text"
-                value={rainfallForm.locationLabel}
-                onChange={(e) => setRainfallForm((p) => ({ ...p, locationLabel: e.target.value }))}
-                placeholder="e.g. Shivajinagar Weather Station gauge"
-                className="form-control"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Source / Method Note *</label>
-              <input
-                type="text"
-                value={rainfallForm.sourceNote}
-                onChange={(e) => setRainfallForm((p) => ({ ...p, sourceNote: e.target.value }))}
-                placeholder="e.g. Citizen manual rain gauge measurement"
-                className="form-control"
-                required
-              />
-            </div>
-
-            <button type="submit" className="btn btn-primary" style={{ width: "100%" }}>
-              Save Rainfall Record
-            </button>
           </form>
         </div>
       )}
