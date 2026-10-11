@@ -309,7 +309,7 @@ JalLoop is developed for the WeMakeDevs Bharat Builds initiative. The project in
 
 ## License
 
-Add the appropriate license for this repository before redistributing or reusing the project. No license should be assumed unless one is included in the repository.
+JalLoop is licensed under the [MIT License](LICENSE). You may use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the software, subject to the conditions in the `LICENSE` file.
 
 ---
 
