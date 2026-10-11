@@ -67,6 +67,7 @@ AI-generated recommendations are advisory and require human review.
 | Database | MySQL / H2 | Persistent application records |
 | Analysis service | Python, FastAPI | Hydrological calculations and specialized analysis APIs |
 | Agent framework | AWS Strands Agents SDK | Structured, evidence-grounded explanations |
+| Logging / observability | AWS Lambda Powertools for Python | Structured logs for HTTP requests, failures, and runoff calculations |
 
 ## System Architecture
 
@@ -103,7 +104,7 @@ AI-generated recommendations are advisory and require human review.
              when configured    Fallback
 ```
 
-The Spring Boot backend owns authoritative application records and state transitions. The Python analysis service performs specialized calculations and analysis; it is not the primary database writer.
+The Spring Boot backend owns authoritative application records and state transitions. The Python analysis service performs specialized calculations and analysis; it is not the primary database writer. The AI service uses AWS Lambda Powertools' `Logger` for structured application logs, including completed/failed HTTP requests and runoff-estimate events.
 
 ## Hydrological Calculation
 
@@ -164,7 +165,7 @@ The explanation workflow is designed to:
 
 When the model integration is not configured or fails, a deterministic explanation fallback is available. The fallback uses supplied incident data and rules rather than generating a model-based response.
 
-The presence of the Strands Agents SDK does not by itself mean JalLoop is deployed on AWS. The project can run locally, and the configured model provider depends on the environment.
+The presence of the Strands Agents SDK or AWS Lambda Powertools does not by itself mean JalLoop is deployed on AWS. The current documented runtime is FastAPI served by Uvicorn locally. The repository's current AI-service entry point does not define an AWS Lambda handler or include a Lambda deployment configuration, so Lambda deployment should not be claimed unless those are added and tested. The configured model provider depends on the environment.
 
 ## Getting Started
 
@@ -246,6 +247,8 @@ The AI explanation service recognizes:
 | `OPENAI_API_KEY` | Enables the configured OpenAI model integration for the Strands explanation path |
 | `STRANDS_MODEL_ID` | Selects the model ID; the code defaults to `gpt-4o-mini` |
 | `JALLOOP_FORCE_DETERMINISTIC_AGENT` | Set to `1` to force deterministic explanations |
+
+`aws-lambda-powertools` is included for structured logging. The current local FastAPI launch command uses Uvicorn; Powertools logging does not itself convert the FastAPI app into a Lambda handler.
 
 Without model credentials, the deterministic fallback can support local demonstration and testing.
 
